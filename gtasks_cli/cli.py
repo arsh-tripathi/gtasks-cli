@@ -78,7 +78,12 @@ class Task:
     def to_json(self):
         notesFieldStr: str = "" if self.date is None else f'"notes": "{self.notes}",'
         dateFieldStr: str = "" if self.date is None else f'"due": "{self.date.toRFC()}",'
-        return f'{"kind": "{self.kind}","title": "{self.title}",{notesFieldStr}{dateFieldStr}}'
+        # return f'{"kind": "{self.kind}","title": "{self.title}",{notesFieldStr}{dateFieldStr}}'
+        return {
+            "title": self.title,
+            "notes": self.notes,
+            "due": self.date.toRFC()
+        }
 
 def clearList(service, tasklist: str):
     """
@@ -105,8 +110,9 @@ def getTask(service, tasklist: str, task: str):
     """
     Returns the specified task
     """
-    result = service.tasks().delete(tasklist=tasklist, task=task).execute()
+    result = service.tasks().get(tasklist=tasklist, task=task).execute()
     printTask(result)
+    return result
 
 def insertTask(service, tasklist: str, task, parent: str, previous: str):
     """
@@ -120,15 +126,12 @@ def insertTask(service, tasklist: str, task, parent: str, previous: str):
     """
     args = {
         "tasklist": tasklist,
-        "task": task,
         "parent": parent,
-        "previous": previous
+        "previous": previous,
+        "body": task.to_json()
     }
 
-    httpreq = service.tasks().insert(**args)
-
-    httpreq.body = task.to_json()
-    result = httpreq.execute()
+    result = service.tasks().insert(**args).execute()
     printTask(result)
 
 def listTasks(service, 
@@ -192,16 +195,30 @@ def updateTask(service, tasklist: str, task: str, field: str, newValue):
     """
     Updates the specified field in the task, doesn't wipe other fields
     """
+
+    if (field == "due"):
+        newValue = RFCDate(newValue).toRFC()
+
     args = {
         "tasklist": tasklist,
         "task": task,
+        "body": {
+            field: newValue
+        }
     }
 
     args = {k: v for k, v in args.items() if (type(v) != str) or v != ""}
-    httpReq = service.tasks().patch(**args)
-    httpReq.body = f'{"{field}": {str(newValue)}}'
-    result = httpReq.execute()
+    result = service.tasks().patch(**args).execute()
     printTask(result)
+
+def toggleCompleted(service, tasklist: str, taskID: str):
+    """
+    Toggle complete status of a task
+    """
+    task = getTask(service, tasklist, taskID)
+    completed = True if task.get("status", "") == "completed" else False
+    updateTask(service, tasklist, taskID, "status", "needsAction" if completed else "completed")
+
 
 def deleteTaskList(service, tasklist: str):
     """
@@ -225,9 +242,7 @@ def createTaskList(service, title: str):
     Creates a new task list and adds it to the authenticated user's 
     task lists. A user can have up to 2000 lists at a time.
     """
-    httpReq = service.tasklists().insert()
-    httpReq.body = f'{"title": {title}}'
-    result = httpReq.execute()
+    result = service.tasklists().insert(body={"title": title}).execute()
     printTaskList(result)
 
 def listTaskLists(service, sort_direction):
@@ -250,24 +265,18 @@ def updateTaskList(service, newTitle: str):
     """
     Updates the authenticated user's specified task list.
     """
-    httpReq = service.tasklists().update()
-    httpReq.body = f'{"title": {newTitle}}'
-    result = httpReq.execute()
+    result = service.tasklists().update(body={"title": newTitle}).execute()
     printTaskList(result)
 
-
 def main():
-    """Shows basic usage of the Tasks API.
-    Prints the title and ID of the first 10 task lists.
-    """
     parser = argparse.ArgumentParser(
         description="Google tasks cli interface"
     )
     parser.add_argument("action", 
                         choices=["clearList", 
-                                 "delete", "get", "insert", "list", "move", "update",
+                                 "delete", "get", "insert", "list", "move", "update", "toggleCompleted",
                                  "deleteList", "getList", "create", "listList", "updateList" ],
-                        help="The action to perform (must be one of: delete, get, insert, list, move, update, deleteList, getList, create, listList, updateList)")
+                        help="The action to perform (must be one of: delete, get, insert, list, move, update, toggleCompleted, deleteList, getList, create, listList, updateList)")
     parser.add_argument("--tasklist", "-l", 
                         type=str, default="@default", 
                         help="Tasklist id to act on (default: @default)")
@@ -290,7 +299,7 @@ def main():
                         type=str, default="",
                         help="Due date of the new task, pass in dd/mm/yyyy format")
     parser.add_argument("--showCompleted", "-c",
-                        type=bool, default=True,
+                        action="store_true", default=False,
                         help="Whether to show completed and hidden tasks")
     parser.add_argument("--dueMin", "-b",
                         type=str, default="",
@@ -359,7 +368,9 @@ def main():
             case "move":
                 moveTask(service, args.tasklist, args.task, args.parent, args.previous, args.destinationTaskList)
             case "update":
-                updateTask(service, args.tasklist, args.task, args.field, args.newValue)
+                updateTask(service, args.tasklist, args.task, args.field, args.value)
+            case "toggleCompleted":
+                toggleCompleted(service, args.tasklist, args.task)
             case "deleteList":
                 deleteTaskList(service, args.tasklist)
             case "getList":
