@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: gtasks-cli
+Version: 0.1.0
+Summary: A CLI utility for Google Tasks
+Author-email: Arsh Tripathi <arsht2004@gmail.com>
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: google-api-python-client
+Requires-Dist: google-auth-oauthlib
+Requires-Dist: google-auth-httplib2
+
+# gtasks-cli
+
+A Command line interface for interacting with google tasks using the google api
+
+## Installation
+
+1. Clone the repo

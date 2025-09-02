@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gtasks-cli"
+version = "0.1.0"
+description = "A CLI utility for Google Tasks"
+authors = [
+  { name="Arsh Tripathi", email="arsht2004@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "google-api-python-client",
+  "google-auth-oauthlib",
+  "google-auth-httplib2",
+]
+
+[project.scripts]
+gtasks-cli = "gtasks_cli.cli:main"
+

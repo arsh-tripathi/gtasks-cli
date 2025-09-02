@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+gtasks_cli/__init__.py
+gtasks_cli/cli.py
+gtasks_cli.egg-info/PKG-INFO
+gtasks_cli.egg-info/SOURCES.txt
+gtasks_cli.egg-info/dependency_links.txt
+gtasks_cli.egg-info/entry_points.txt
+gtasks_cli.egg-info/requires.txt
+gtasks_cli.egg-info/top_level.txt

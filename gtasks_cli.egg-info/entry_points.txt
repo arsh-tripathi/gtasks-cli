@@ -1,0 +1,2 @@
+[console_scripts]
+gtasks-cli = gtasks_cli.cli:main
